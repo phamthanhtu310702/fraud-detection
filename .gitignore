@@ -1,0 +1,6 @@
+logs
+saved_models
+saved_results
+processed_data/reddit
+test.ipynb
+__pycache__
