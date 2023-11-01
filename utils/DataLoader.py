@@ -121,3 +121,45 @@ def get_node_classification_data(dataset_name: str, val_ratio: float, test_ratio
 #     mask_label_index = np.random.choice(positive_eids, num, replace=False)
 #     full_data.labels[mask_label_index] = -1
 #     return full_data
+
+
+def get_node_classification_data_inference(dataset_name: str):
+    """
+    generate data for node classification task
+    :param dataset_name: str, dataset name
+    :param val_ratio: float, validation data ratio
+    :param test_ratio: float, test data ratio
+    :return: node_raw_features, edge_raw_features, (np.ndarray),
+            full_data, train_data, val_data, test_data, (Data object)
+    """
+    # Load data and train val test split
+    graph_df = pd.read_csv('./processed_data/{}/ml_{}.csv'.format(dataset_name, dataset_name))
+    edge_raw_features = np.load('./processed_data/{}/ml_{}.npy'.format(dataset_name, dataset_name))
+    node_raw_features = np.load('./processed_data/{}/ml_{}_node.npy'.format(dataset_name, dataset_name))
+
+    # graph_df = graph_df.iloc[:2048]
+    NODE_FEAT_DIM = EDGE_FEAT_DIM = 172
+    assert NODE_FEAT_DIM >= node_raw_features.shape[1], f'Node feature dimension in dataset {dataset_name} is bigger than {NODE_FEAT_DIM}!'
+    assert EDGE_FEAT_DIM >= edge_raw_features.shape[1], f'Edge feature dimension in dataset {dataset_name} is bigger than {EDGE_FEAT_DIM}!'
+    # padding the features of edges and nodes to the same dimension (172 for all the datasets)
+    if node_raw_features.shape[1] < NODE_FEAT_DIM:
+        node_zero_padding = np.zeros((node_raw_features.shape[0], NODE_FEAT_DIM - node_raw_features.shape[1]))
+        node_raw_features = np.concatenate([node_raw_features, node_zero_padding], axis=1)
+    if edge_raw_features.shape[1] < EDGE_FEAT_DIM:
+        edge_zero_padding = np.zeros((edge_raw_features.shape[0], EDGE_FEAT_DIM - edge_raw_features.shape[1]))
+        edge_raw_features = np.concatenate([edge_raw_features, edge_zero_padding], axis=1)
+
+    assert NODE_FEAT_DIM == node_raw_features.shape[1] and EDGE_FEAT_DIM == edge_raw_features.shape[1], 'Unaligned feature dimensions after feature padding!'
+
+    # get the timestamp of validate and test set
+
+    src_node_ids = graph_df.u.values.astype(np.longlong)
+    dst_node_ids = graph_df.i.values.astype(np.longlong)
+    node_interact_times = graph_df.ts.values.astype(np.float64)
+    edge_ids = graph_df.idx.values.astype(np.longlong)
+    labels = graph_df.label.values
+
+    # The setting of seed follows previous works
+
+    full_data = Data(src_node_ids=src_node_ids, dst_node_ids=dst_node_ids, node_interact_times=node_interact_times, edge_ids=edge_ids, labels=labels)
+    return node_raw_features, edge_raw_features, full_data, graph_df
