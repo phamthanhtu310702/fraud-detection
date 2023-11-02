@@ -28,12 +28,7 @@ class SupConLoss(torch.nn.Module):
         dev_score_b = (dev_score-dev_score.T).abs()
         mask = torch.where(dev_score_b.abs() <= 1, torch.ones_like(dev_score_b), torch.zeros_like(dev_score_b))
         mask = mask.float().to(device)
-        ##############
-
-        # labels = labels.contiguous().view(-1, 1)
-        # mask = torch.eq(labels, labels.T).float().to(device)
-
-        # print('>>>>>>>>>>>>>>>>>>mask', mask, '\t shape:', mask.shape)
+ 
 
         contrast_count = features.shape[1]
         contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
@@ -69,11 +64,6 @@ class SupConLoss(torch.nn.Module):
         log_probs = torch.sum(
             log_probs * positives_mask, axis=1)[num_positives_per_row > 0] / num_positives_per_row[
                         num_positives_per_row > 0]
-        '''
-        计算正样本平均的log-likelihood
-        考虑到一个类别可能只有一个样本，就没有正样本了 比如我们labels的第二个类别 labels[1,2,1,1]
-        所以这里只计算正样本个数>0的
-        '''
         # loss
         loss = -log_probs
         if self.scale_by_temperature:
